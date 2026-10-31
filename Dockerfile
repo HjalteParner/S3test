@@ -1,10 +1,11 @@
 # Base R image
 FROM rocker/r-ver:4.3.1
 
-# Install aws.s3 package
+# Install required R packages
+RUN R -e "install.packages('shiny', repos = 'https://cloud.r-project.org')"
 RUN R -e "install.packages('aws.s3', repos = 'https://cloud.r-project.org')"
 
-# Copy your Shiny app
+# Copy the Shiny app
 COPY app.R /srv/shiny-server/app.R
 
 # Expose the Shiny port
