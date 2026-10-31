@@ -1,15 +1,13 @@
-# Base R image
-FROM rocker/r-ver:4.3.1
-
-# Install required R packages
-RUN R -e "install.packages('shiny', repos = 'https://cloud.r-project.org')"
-RUN R -e "install.packages('aws.s3', repos = 'https://cloud.r-project.org')"
-
-# Copy the Shiny app
-COPY app.R /srv/shiny-server/app.R
-
-# Expose the Shiny port
+FROM rocker/r-ver:4.6.1
+ARG RENV_PATHS_CACHE=/root/.cache/R/renv
+ENV "RENV_PATHS_CACHE"="${RENV_PATHS_CACHE}"
+RUN apt-get update -y && apt-get install -y  libcurl4-openssl-dev libxml2-dev libssl-dev cmake make libuv1-dev zlib1g-dev git && rm -rf /var/lib/apt/lists/*
+RUN mkdir -p /usr/local/lib/R/etc/ /usr/lib/R/etc/
+RUN echo "options(renv.config.pak.enabled = FALSE, repos = c(CRAN = 'https://cran.rstudio.com/'), download.file.method = 'libcurl', Ncpus = 4)" | tee /usr/local/lib/R/etc/Rprofile.site | tee /usr/lib/R/etc/Rprofile.site
+RUN R -e 'install.packages("renv")'
+COPY renv.lock renv.lock
+RUN --mount=type=cache,id=renv-cache,target=${RENV_PATHS_CACHE} R -e 'renv::restore()'
+WORKDIR /srv/shiny-server/
+COPY . /srv/shiny-server/
 EXPOSE 3838
-
-# Run the app
-CMD ["R", "-e", "shiny::runApp('/srv/shiny-server/app.R', host='0.0.0.0', port=3838)"]
+CMD R -e 'shiny::runApp("/srv/shiny-server",host="0.0.0.0",port=3838)'
